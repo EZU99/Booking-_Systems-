@@ -25,8 +25,8 @@ const showSchema = new mongoose.Schema(
       required: true,
     },
     occupiedSeats: {
-      type: Object,
-      default: {},
+     regular: { type: [String], default: [] },
+    vip: { type: [String], default: [] },
     },
   },
   { minimize: false }

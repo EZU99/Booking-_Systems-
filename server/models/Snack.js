@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 const snackSchema = new mongoose.Schema(
   {
+
     name: {
       type: String,
       required: true,
@@ -22,19 +23,16 @@ const snackSchema = new mongoose.Schema(
       enum: ["Snack", "Drink", "Water"],
       default: "Snack",
     },
-    image:{
-        public_id:{
-            type: String,
-            required: true,
-
-        },
-        url:{
-            type: String,
-            required: true,
-
-        },
+    image: {
+      public_id: {
+        type: String,
+        required: true,
+      },
+      url: {
+        type: String,
+        required: true,
+      },
     },
-
   },
   { timestamps: true }
 );

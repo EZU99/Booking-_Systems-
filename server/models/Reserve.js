@@ -18,6 +18,7 @@ const reserveSchema = new mongoose.Schema(
     email: {
       type: String,
       required: [true, "Email is required"],
+      match: [/^\S+@\S+\.\S+$/, "Please provide a valid email address"],
     },
 
     phone: {
@@ -37,10 +38,18 @@ const reserveSchema = new mongoose.Schema(
       ],
       required: [true, "Event type is required"],
     },
-    peopleAttend:{
-       type: Number,
-      required: [true, "Attend number is required"],
+    Talk: {
+  type: String,
+  enum: ["Email", "Phone"],
+  required: [true, "Please choose a contact method"],
+},
 
+
+
+    peopleAttend: {
+      type: Number,
+      required: [true, "Attend number is required"],
+      min: [1, "At least 20 person must attend"],
     },
 
     message: {
@@ -51,6 +60,29 @@ const reserveSchema = new mongoose.Schema(
       type: Date,
       required: [true, "Reservation date is required"],
     },
+
+    eventStartTime: {
+      type: String,
+      required: [true, "Event start time is required"],
+      validate: {
+        validator: function (v) {
+          return /^([0-1]\d|2[0-3]):([0-5]\d)$/.test(v); // Matches HH:mm format
+        },
+        message: "Start time must be in HH:mm format (24-hour)",
+      },
+    },
+
+    eventEndTime: {
+      type: String,
+      required: [true, "Event end time is required"],
+      validate: {
+        validator: function (v) {
+          return /^([0-1]\d|2[0-3]):([0-5]\d)$/.test(v);
+        },
+        message: "End time must be in HH:mm format (24-hour)",
+      },
+    },
+    approved: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

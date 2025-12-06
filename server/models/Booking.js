@@ -36,12 +36,7 @@ import mongoose from "mongoose";
         type: Array, required: true
 
     },
-    isPaid: {
-        type: Boolean,  default:false
-    },
-    paymentLink: {
-        type: String
-    },
+    
 
  },{timestamps: true})
 

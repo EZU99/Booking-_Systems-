@@ -56,18 +56,24 @@ export const updateFavorite = async (req, res) => {
 
 
 
-export const getFavorites = async (req, res) =>{
-    try{
-         const user = await clerkClient.users.getUser(req.auth().userId)
-         const favorites = user.privateMetadata.favorites;
-
-         // gettting movies from db
-
-         const movies = await Movie.find({_id: {$in: favorites}})
-
-         res.json({success: true, movies})
-    }catch(error){
-        console.error(error);
-        res.json({success: false, message: error.message});
+export const getFavorites = async (req, res) => {
+  try {
+   const { userId } = req.auth();// ✅ Correct way to access auth info
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Unauthorized: userId missing" });
     }
-}
+
+    const user = await clerkClient.users.getUser(userId);
+    const favorites = user?.privateMetadata?.favorites || [];
+
+    const movies = await Movie.find({ _id: { $in: favorites } });
+
+    res.json({ success: true, movies });
+  } catch (error) {
+    console.error("Error in getFavorites:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to fetch favorites",
+    });
+  }
+};

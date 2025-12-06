@@ -201,26 +201,3 @@ export const getShow = async (req, res) =>{
 }
 }
 
-export const getAllShowsCombined = async (req, res) => {
-  try {
-    const [tmdbShows, manualShows] = await Promise.all([
-      Show.find({ showDateTime: { $gte: new Date() } })
-        .populate("movie")
-        .sort({ showDateTime: 1 }),
-      ManualShow.find({ showDateTime: { $gte: new Date() } })
-        .populate("movie")
-        .sort({ showDateTime: 1 }),
-    ]);
-
-    // Add a flag so frontend knows where each show came from
-    const allShows = [
-      ...tmdbShows.map((show) => ({ ...show._doc, isManual: false })),
-      ...manualShows.map((show) => ({ ...show._doc, isManual: true })),
-    ];
-
-    res.json({ success: true, shows: allShows });
-  } catch (error) {
-    console.error("Get All Shows Combined Error:", error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-};

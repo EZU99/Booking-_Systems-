@@ -6,13 +6,7 @@ import Loading from "../components/Loading";
 import { useAppContext } from "../context/AppContext";
 import toast from "react-hot-toast";
 
-/**
- * UpcomingDetail
- * - Cloudinary-friendly (poster, trailer, cast images)
- * - <video> for Cloudinary video files
- * - Reminders saved in localStorage
- * - Graceful fallback for images/videos
- */
+
 const UpcomingDetail = () => {
   const { id } = useParams();
   const { axios } = useAppContext();
@@ -63,7 +57,7 @@ const UpcomingDetail = () => {
   const handleReminder = () => {
     setReminded(true);
     localStorage.setItem(`reminder_${id}`, "true");
-    toast.success("Reminder set — we'll remind you when the movie releases 🎬");
+    toast.success("Reminder set — we'll remind you when the movie   Shows 🎬");
   };
 
   useEffect(() => {

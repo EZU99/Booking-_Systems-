@@ -12,6 +12,7 @@ import userRouter from './Routes/userRoutes.js';
 import fileUpload from "express-fileupload";
 import snackRouter from './Routes/SnacksRouter.js';
 import reserveRoute from "./Routes/reserveRoute.js";
+import "./cron/reminderJob.js";
 
 
 import dotenv from "dotenv";
@@ -35,10 +36,11 @@ app.use(cors())
 
 app.use(clerkMiddleware());
 
+
 app.use(fileUpload({
   useTempFiles: true,
-  tempFileDir: "/tmp/", // optional
-
+  tempFileDir: "/tmp/",
+  
 }));
 
 
@@ -56,5 +58,6 @@ app.use('/api/user', userRouter)
 app.use('/api/snacks', snackRouter)
 app.use("/api/reserve", reserveRoute)
 app.use('/api/upcoming', upcomingRouter)
+
 
 app.listen(port, ()=> console.log(  `Server listening at http://localhost:${port}`));

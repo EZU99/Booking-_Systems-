@@ -11,7 +11,10 @@ const AddShows = () => {
   const currency = import.meta.env.VITE_CURENCY;
 
   const [nowPlayingMovies, setNowPlayingMovies] = useState([]);
-  const [selectedMovie, setSelectedMovie] = useState(null); // store {id, title}
+  const [manualMovies, setManualMovies] = useState([]);
+  const [source, setSource] = useState("nowplaying"); // "nowplaying" | "manual"
+
+  const [selectedMovie, setSelectedMovie] = useState(null);
   const [dateTimeSelection, setDateTimeSelection] = useState({});
   const [dateTimeInput, setDateTimeInput] = useState("");
   const [regularPrice, setRegularPrice] = useState("");
@@ -23,24 +26,40 @@ const AddShows = () => {
   const hallOptions = ["C1", "C2", "C3"];
   const typeOptions = ["2D", "3D"];
 
-  // Fetch now playing movies
+  // 🔹 Fetch now playing movies
   const fetchNowPlayingMovies = async () => {
     try {
       const { data } = await axios.get("/api/show/now-playing", {
-           headers: { Authorization: `Bearer ${await getToken()}` }
-,
+        headers: { Authorization: `Bearer ${await getToken()}` },
       });
-      if (data.success) setNowPlayingMovies(data.movies);
+      if (data.success) setNowPlayingMovies(data.movies || []);
     } catch (error) {
-      console.error("Error fetching movies:", error);
+      console.error("Error fetching now playing movies:", error);
+      setNowPlayingMovies([]);
+    }
+  };
+
+  // 🔹 Fetch manual movies (added by admin)
+  const fetchManualMovies = async () => {
+    try {
+      const { data } = await axios.get("/api/show/manual/movies/all", {
+        headers: { Authorization: `Bearer ${await getToken()}` },
+      });
+      if (data.success) setManualMovies(data.movies || []);
+    } catch (error) {
+      console.error("Error fetching manual movies:", error);
+      setManualMovies([]);
     }
   };
 
   useEffect(() => {
-    if (user) fetchNowPlayingMovies();
+    if (user) {
+      fetchNowPlayingMovies();
+      fetchManualMovies();
+    }
   }, [user]);
 
-  // Handle date-time input
+  // 🕒 Date-Time Selection
   const handleDateTimeChange = (e) => {
     const value = e.target.value;
     const now = new Date();
@@ -52,7 +71,6 @@ const AddShows = () => {
     setDateTimeInput(value);
   };
 
-  // Add date-time to selected hall
   const handleDateTimeAdd = () => {
     if (!selectedHall) return toast.error("Please select a hall!");
     if (!dateTimeInput) return toast.error("Please select a date and time!");
@@ -79,7 +97,6 @@ const AddShows = () => {
     setDateTimeInput("");
   };
 
-  // Remove specific time
   const handleRemoveTime = (hall, date, time) => {
     setDateTimeSelection((prev) => {
       const hallData = { ...prev[hall] };
@@ -92,16 +109,16 @@ const AddShows = () => {
     });
   };
 
-  // Submit show
+  // ✅ Unified show submission
   const handleSubmit = async () => {
     try {
       setAddingShow(true);
 
       if (!selectedMovie) return toast.error("Please select a movie!");
       if (!regularPrice || !vipPrice)
-        return toast.error("Enter both regular and VIP prices");
+        return toast.error("Enter both Regular and VIP prices!");
       if (Object.keys(dateTimeSelection).length === 0)
-        return toast.error("Add at least one showtime");
+        return toast.error("Add at least one showtime!");
 
       // Build showsInput
       const showsInput = Object.entries(dateTimeSelection).flatMap(
@@ -121,16 +138,17 @@ const AddShows = () => {
           regular: Number(regularPrice),
           vip: Number(vipPrice),
         },
-      
         showsInput,
       };
 
+      // ✅ Unified endpoint for both TMDB + Manual
       const { data } = await axios.post("/api/show/add", payload, {
         headers: { Authorization: `Bearer ${await getToken()}` },
       });
 
       if (data.success) {
-        toast.success(data.message);
+        toast.success(data.message || "Shows added successfully!");
+        // Reset form
         setSelectedMovie(null);
         setDateTimeSelection({});
         setDateTimeInput("");
@@ -139,57 +157,101 @@ const AddShows = () => {
         setMovieType("2D");
         setSelectedHall("");
       } else {
-        toast.error(data.message);
+        toast.error(data.message || "Failed to add shows.");
       }
     } catch (error) {
-      console.error(error);
+      console.error("Add show error:", error);
       toast.error("An error occurred. Please try again.");
     } finally {
       setAddingShow(false);
     }
   };
 
-  if (nowPlayingMovies.length === 0) return <Loading />;
+  const moviesToDisplay = source === "nowplaying" ? nowPlayingMovies : manualMovies;
+
+  if (user && nowPlayingMovies.length === 0 && manualMovies.length === 0)
+    return <Loading />;
 
   return (
     <>
       <Title text1="Add" text2="Shows" />
 
-      {/* Movie Selection */}
-      <p className="mt-10 text-lg font-medium">Now Playing Movies</p>
+      {/* Source Tabs */}
+      <div className="mt-6 flex items-center gap-3">
+        <button
+          onClick={() => setSource("nowplaying")}
+          className={`px-4 py-2 rounded ${
+            source === "nowplaying"
+              ? "bg-primary text-white"
+              : "bg-transparent border border-gray-700 text-gray-300"
+          }`}
+        >
+          Now Playing
+        </button>
+        <button
+          onClick={() => setSource("manual")}
+          className={`px-4 py-2 rounded ${
+            source === "manual"
+              ? "bg-primary text-white"
+              : "bg-transparent border border-gray-700 text-gray-300"
+          }`}
+        >
+          Manual Movies
+        </button>
+      </div>
+
+      {/* Movie List */}
+      <p className="mt-6 text-lg font-medium">
+        {source === "nowplaying" ? "Now Playing Movies" : "Manual Movies"}
+      </p>
+
       <div className="overflow-x-auto pb-4">
         <div className="flex flex-wrap gap-4 mt-4 w-max">
-          {nowPlayingMovies.map((movie) => (
-            <div
-              key={movie.id}
-              className={`relative max-w-40 cursor-pointer hover:-translate-y-1 transition duration-300 ${
-                selectedMovie?.id === movie.id ? "ring-2 ring-primary" : ""
-              }`}
-              onClick={() => setSelectedMovie({ id: movie.id, title: movie.title })}
-            >
-              <div className="relative rounded-lg overflow-hidden">
-                <img
-                  src={image_base_url + movie.poster_path}
-                  alt={movie.title}
-                  className="w-full object-cover brightness-90"
-                />
-                <div className="text-sm flex items-center justify-between p-2 bg-black/70 w-full absolute bottom-0 left-0">
-                  <p className="flex items-center gap-1 text-gray-400">
-                    <StarIcon className="w-4 h-4 text-primary fill-primary-dull" />
-                    {movie.vote_average?.toFixed(1) ?? "N/A"}
-                  </p>
-                  <p className="text-gray-300">{kConverter(movie.vote_count)} Votes</p>
+          {moviesToDisplay.map((movie) => {
+            const movieId = movie.id ?? movie._id;
+            const title = movie.title;
+            const posterSrc =
+              source === "nowplaying"
+                ? image_base_url + movie.poster_path
+                : movie.backdrop_path?.url ||
+                  image_base_url + movie.poster_path;
+
+            return (
+              <div
+                key={movieId}
+                className={`relative max-w-40 cursor-pointer hover:-translate-y-1 transition duration-300 ${
+                  selectedMovie?.id === movieId ? "ring-2 ring-primary" : ""
+                }`}
+                onClick={() => setSelectedMovie({ id: movieId, title })}
+              >
+                <div className="relative rounded-lg overflow-hidden">
+                  <img
+                    src={posterSrc}
+                    alt={title}
+                    className="w-full object-cover brightness-90"
+                  />
+                  <div className="text-sm flex items-center justify-between p-2 bg-black/70 w-full absolute bottom-0 left-0">
+                    <p className="flex items-center gap-1 text-gray-400">
+                      <StarIcon className="w-4 h-4 text-primary fill-primary-dull" />
+                      {movie.vote_average?.toFixed(1) ?? "N/A"}
+                    </p>
+                    <p className="text-gray-300">
+                      {kConverter(movie.vote_count ?? movie.casts?.length ?? 0)} Votes
+                    </p>
+                  </div>
                 </div>
+                {selectedMovie?.id === movieId && (
+                  <div className="absolute top-2 right-2 flex items-center justify-center bg-primary h-6 w-6 rounded">
+                    <CheckIcon className="w-4 h-4 text-white" />
+                  </div>
+                )}
+                <p className="font-medium truncate">{title}</p>
+                <p className="text-gray-400 text-sm">
+                  {movie.release_date ?? ""}
+                </p>
               </div>
-              {selectedMovie?.id === movie.id && (
-                <div className="absolute top-2 right-2 flex items-center justify-center bg-primary h-6 w-6 rounded">
-                  <CheckIcon className="w-4 h-4 text-white" />
-                </div>
-              )}
-              <p className="font-medium truncate">{movie.title}</p>
-              <p className="text-gray-400 text-sm">{movie.release_date}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -209,7 +271,7 @@ const AddShows = () => {
         </select>
       </div>
 
-      {/* Prices */}
+      {/* Price Fields */}
       <div className="mt-8 flex flex-col md:flex-row gap-6">
         <div>
           <label className="block text-sm font-medium mb-2">Regular Price</label>
@@ -241,7 +303,7 @@ const AddShows = () => {
         </div>
       </div>
 
-      {/* Hall & Date-Time */}
+      {/* Hall + Time Selection */}
       <div className="mt-6">
         <label className="block text-sm font-medium mb-2">Select Hall, Date & Time</label>
         <div className="flex flex-wrap items-center gap-5 mb-3">
@@ -271,24 +333,22 @@ const AddShows = () => {
             Add Time
           </button>
         </div>
-
-        <div className="border border-gray-600 p-3 rounded-lg">
-          {Object.keys(dateTimeSelection).length === 0 && (
-            <p className="text-sm text-gray-400">No showtimes added yet.</p>
-          )}
-        </div>
       </div>
 
-      {/* Display Selected Halls */}
+      {/* Selected Halls */}
       {Object.keys(dateTimeSelection).length > 0 && (
         <div className="mt-6">
           <h2 className="mb-2 text-lg font-semibold">Selected Hall, Date & Time</h2>
           <p className="text-gray-400 mb-4">🎬 {selectedMovie?.title}</p>
-
           <ul className="space-y-4">
             {Object.entries(dateTimeSelection).map(([hall, hallData]) => (
-              <div key={hall} className="mb-4 border border-gray-700 rounded-lg p-4 bg-black/30">
-                <h3 className="font-semibold text-primary text-lg mb-2">🏛️ Hall: {hall}</h3>
+              <div
+                key={hall}
+                className="mb-4 border border-gray-700 rounded-lg p-4 bg-black/30"
+              >
+                <h3 className="font-semibold text-primary text-lg mb-2">
+                  🏛️ Hall: {hall}
+                </h3>
                 {Object.entries(hallData).map(([date, times]) => (
                   <div key={date} className="flex flex-col gap-2">
                     <div className="font-medium text-gray-300">📅 {date}</div>
@@ -315,6 +375,7 @@ const AddShows = () => {
         </div>
       )}
 
+      {/* Submit Button */}
       <button
         onClick={handleSubmit}
         disabled={addingShow}
@@ -327,3 +388,135 @@ const AddShows = () => {
 };
 
 export default AddShows;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+export const addShow = async (req, res) => {
+  try {
+    const { movieId, showsInput, price, type } = req.body;
+
+    // 🧱 Validate
+    if (!movieId || !showsInput || !price) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields (movieId, showsInput, price).",
+      });
+    }
+
+    // 🧩 Parse JSON strings if needed
+    let parsedShows = showsInput;
+    let parsedPrice = price;
+    if (typeof showsInput === "string") {
+      try { parsedShows = JSON.parse(showsInput); } catch {}
+    }
+    if (typeof price === "string") {
+      try { parsedPrice = JSON.parse(price); } catch {}
+    }
+
+    // 🎥 Find movie in either Movie or ManualMovie
+    let movie = await Movie.findById(movieId);
+    if (!movie) {
+      movie = await ManualMovie.findById(movieId);
+    }
+
+    if (!movie) {
+      return res.status(404).json({
+        success: false,
+        message: "Movie not found in either Movie or ManualMovie collection.",
+      });
+    }
+
+    // 🎬 Prepare show documents
+    const showsToCreate = [];
+
+    for (const show of parsedShows) {
+      const { hall, date, times } = show;
+      if (!hall || !date || !Array.isArray(times)) continue;
+
+      for (const time of times) {
+        const showDateTime = new Date(`${date}T${time}`);
+
+        // Skip duplicates (same movie + hall + datetime)
+        const exists = await Show.exists({
+          movie: movie._id.toString(),
+          hall,
+          showDateTime,
+        });
+
+        if (!exists) {
+          showsToCreate.push({
+            movie: movie._id.toString(),
+            hall,
+            type: type || "2D",
+            showDateTime,
+            showPrice: {
+              regular: parsedPrice.regular,
+              vip: parsedPrice.vip,
+            },
+            occupiedSeats: { regular: [], vip: [] },
+          });
+        }
+      }
+    }
+
+    if (showsToCreate.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No new shows to add (duplicates skipped).",
+      });
+    }
+
+    // 💾 Save to Show collection
+    await Show.insertMany(showsToCreate);
+
+    res.status(201).json({
+      success: true,
+      message: "Shows added successfully.",
+      totalShowsAdded: showsToCreate.length,
+      movieTitle: movie.title,
+      source: movie.__t === "ManualMovie" ? "manual" : "tmdb",
+    });
+  } catch (error) {
+    console.error("Add Show Error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Server error while adding shows.",
+    });
+  }
+};

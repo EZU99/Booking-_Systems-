@@ -25,6 +25,26 @@ const MovieDetails = () => {
     image_base_url,
   } = useAppContext();
 
+   const getPosterSrc = (poster) => {
+    return (
+      (typeof poster === "string" && poster) ||
+      poster?.url ||
+      poster?.secure_url ||
+      "/images/default-poster.jpg"
+    );
+  };
+
+  // Fallback cast image helper
+const getCastSrc = (path) => {
+  return (
+    (typeof path === "string" && path) ||
+    path?.url ||
+    path?.secure_url ||
+    "/images/default-cast.jpg"
+  );
+};
+
+
   //  Fetch show + movie details
   const getShow = async () => {
     try {
@@ -111,6 +131,8 @@ const MovieDetails = () => {
   }
 
   const movie = show.movie;
+    const posterSrc = getPosterSrc(movie.poster_path);
+
   const isFavorite = favoriteMovies?.find((fav) => fav._id === id);
 
   return (
@@ -119,7 +141,7 @@ const MovieDetails = () => {
       <div className="flex flex-col mt-5 lg:mt-25 max-lg:flex-col lg:flex-row gap-6 max-w-6xl mx-auto w-full">
         {/* Poster */}
         <img
-          src={`${image_base_url}${movie.poster_path}`}
+          src={posterSrc.startsWith("http") ? posterSrc : image_base_url + posterSrc}
           alt={movie.title}
           className="mx-auto max-lg:mt-10 rounded-xl w-full max-w-[320px] h-auto object-cover"
         />
@@ -194,26 +216,40 @@ const MovieDetails = () => {
 
       {/* Cast List */}
       {show.movie.casts && show.movie.casts.length > 0 && (
-        <div className="relative mt-18 w-full overflow-x-auto no-scrollbar">
-          <div className="flex gap-6 px-6 justify-start items-center xl:flex-wrap xl:justify-center">
-            {show.movie.casts.slice(0, 10).map((cast, index) => (
-              <div
-                key={index}
-                className="flex flex-col items-center text-center flex-shrink-0"
-              >
-                <img
-                  src={
-                    image_base_url + cast.profile_path
-                  }
-                  alt={cast.name}
-                  className="rounded-full h-28 w-28 object-cover border-primary-dull border-2"
-                />
-                <p className="font-medium text-xs mt-3">{cast.name}</p>
-              </div>
-            ))}
+  <div className="relative mt-18 w-full overflow-x-auto no-scrollbar">
+    <div className="flex gap-6 px-6 justify-start items-center xl:flex-wrap xl:justify-center">
+
+      {show.movie.casts.slice(0, 10).map((cast, index) => {
+        const imgSrc = getCastSrc(cast.profile_path);
+
+        return (
+          <div
+            key={index}
+            className="flex flex-col items-center text-center flex-shrink-0"
+          >
+            <img
+              src={imgSrc.startsWith("http") ? imgSrc : image_base_url + imgSrc}
+              alt={cast.name || "Actor"}
+              className="
+                rounded-full
+                h-28 w-28
+                object-cover
+                border-2 border-primary-dull
+                shadow-lg shadow-black/40
+              "
+            />
+
+            <p className="font-medium text-xs mt-3">{cast.name}</p>
           </div>
-        </div>
-      )}
+        );
+      })}
+
+    </div>
+  </div>
+)}
+
+
+
 
       {/* Date Selection */}
       <div id="dateSelect" className="mt-5 lg:px-15 py-5 xl:px-75">

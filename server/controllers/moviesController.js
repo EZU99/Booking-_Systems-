@@ -1,17 +1,26 @@
 import cloudinary from "../configs/cloudinary.js";
 import ManualMovie from "../models/ManualMovie.js";
 
-// ✅ Add Manual Movie
 export const addMovies = async (req, res, next) => {
   try {
     const { title, overview, release_date, original_language, runtime, vote_average, tagline } = req.body;
 
-    // === Parse Genres ===
-    const rawGenres = req.body.genres ?? req.body.genres_json ?? req.body["genres[]"];
-    let genres = [];
-    if (Array.isArray(rawGenres)) genres = rawGenres.map((g) => String(g).trim());
-    else if (typeof rawGenres === "string")
-      genres = rawGenres.split(",").map((g) => g.trim());
+   
+// === Parse Genres from comma-separated text ===
+const genresText = req.body.genres_text; // e.g. "Action, Adventure, Sci-Fi"
+
+if (!genresText || !genresText.trim()) {
+  return res.status(400).json({ success: false, message: "Genres are required" });
+}
+
+// Optional: clean up spacing
+const genres = genresText
+  .split(",")            // split by comma
+  .map(g => g.trim())    // remove extra spaces
+  .filter(Boolean)       // remove empty entries
+  .join(", ");           // join back as a single string "Action, Adventure, Sci-Fi"
+
+
 
     if (!title || !overview || !release_date || !runtime || genres.length === 0)
       return res.status(400).json({ success: false, message: "Missing required fields." });

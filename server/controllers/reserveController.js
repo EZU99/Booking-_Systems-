@@ -1,14 +1,24 @@
 import nodemailer from "nodemailer";
+import path from "path";
+import { fileURLToPath } from "url";
 import Reserve from "../models/Reserve.js";
+
+// 🧩 Needed to simulate __dirname in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// ✅ Absolute path to your logo image
+const logoPath = path.resolve(__dirname, "../assets/logo.png");
 
 export const createReservation = async (req, res) => {
   try {
     const {
+      title,
       SenderName,
       email,
       phone,
       events,
-       Talk, 
+      Talk,
       peopleAttend,
       message,
       ReservedDate,
@@ -16,11 +26,35 @@ export const createReservation = async (req, res) => {
       eventEndTime,
     } = req.body;
 
-    // Convert times to numbers for comparison
+    // ✅ 1. Validate ReservedDate (not today or past)
+    const today = new Date();
+    const reservedDate = new Date(ReservedDate);
+
+    today.setHours(0, 0, 0, 0);
+    reservedDate.setHours(0, 0, 0, 0);
+
+    if (reservedDate <= today) {
+      return res.status(400).json({
+        success: false,
+        message: "Reservation date must be in the future (not today or past).",
+      });
+    }
+
+    // ✅ (optional) Limit reservations to within 60 days
+    const maxAdvance = new Date();
+    maxAdvance.setDate(today.getDate() + 60);
+    if (reservedDate > maxAdvance) {
+      return res.status(400).json({
+        success: false,
+        message: "Reservations can only be made within 60 days in advance.",
+      });
+    }
+
+    // ✅ 2. Convert times to numbers for comparison
     const [startHour, startMinute] = eventStartTime.split(":").map(Number);
     const [endHour, endMinute] = eventEndTime.split(":").map(Number);
 
-    // Check if times are within hall hours (08:00 – 22:00)
+    // ✅ 3. Check if times are within hall hours (08:00 – 22:00)
     if (
       startHour < 8 || startHour > 22 ||
       endHour < 8 || endHour > 22
@@ -31,7 +65,7 @@ export const createReservation = async (req, res) => {
       });
     }
 
-    // Check if end time is after start time
+    // ✅ 4. Ensure end time is after start time
     const startTotal = startHour * 60 + startMinute;
     const endTotal = endHour * 60 + endMinute;
 
@@ -42,8 +76,9 @@ export const createReservation = async (req, res) => {
       });
     }
 
-    // Save reservation
+    // ✅ 5. Save reservation
     const newReserve = await Reserve.create({
+      title,
       SenderName,
       email,
       phone,
@@ -56,7 +91,7 @@ export const createReservation = async (req, res) => {
       eventEndTime,
     });
 
-    // Nodemailer transporter
+    // ✅ 6. Send Emails
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -65,31 +100,87 @@ export const createReservation = async (req, res) => {
       },
     });
 
-    // Send email
+    // ---- ADMIN EMAIL ----
     await transporter.sendMail({
-      from: `"Cinema Hall Booking" <${process.env.EMAIL_USER}>`,
+      from: `"Century Cinema " <${process.env.EMAIL_USER}>`,
       to: process.env.EMAIL_USER,
       subject: "New Hall Reservation",
       html: `
         <h2>New Hall Reservation</h2>
-        <p><strong>Name:</strong> ${SenderName}</p>
-        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Name:</strong> ${title} ${SenderName}</p>
+        <p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
         <p><strong>Phone:</strong> ${phone}</p>
-        <p><strong>Preferred Contact Method:</strong> ${Talk}</p>
+        <p><strong>Preferred Contact:</strong> ${Talk}</p>
         <p><strong>Event:</strong> ${events}</p>
         <p><strong>People Attending:</strong> ${peopleAttend}</p>
+        <p><strong>Date:</strong> ${new Date(ReservedDate).toLocaleDateString()}</p>
         <p><strong>Start Time:</strong> ${eventStartTime}</p>
         <p><strong>End Time:</strong> ${eventEndTime}</p>
-        <p><strong>Date:</strong> ${new Date(ReservedDate).toLocaleString()}</p>
-        <p><strong>Message:</strong> ${message || "No message"}</p>
+        <p><strong>Message:</strong> ${message || "No message provided"}</p>
       `,
     });
 
+    // ---- USER EMAIL ----
+    await transporter.sendMail({
+      from: `"Century Cinema Hall" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: "Reservation Request Received",
+      attachments: [
+        {
+          filename: "logo.png",
+          path: logoPath,
+          cid: "centurycinema-logo",
+        },
+      ],
+      html: `
+        <div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 40px 0;">
+          <div style="max-width: 550px; margin: 0 auto; background-color: #ffffff; border: 1px solid #ddd; border-top: 5px solid #d9534f; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+            
+            <div style="padding: 30px; text-align: center; border-bottom: 1px dashed #eee;">
+              <img src="cid:centurycinema-logo" width="50" style="margin-bottom: 10px; opacity: 0.8;" />
+              <h2 style="margin: 0; color: #333;">Reservation Request</h2>
+              <p style="color: #888; margin-top: 5px;">Century Cinema Hall</p>
+            </div>
+
+            <div style="padding: 30px;">
+              <p style="font-size: 16px; color: #555;">Hi ${title} ${SenderName},</p>
+              <p style="line-height: 1.6; color: #666;">We’ve received your hall reservation request. We’ll review it and contact you soon.</p>
+
+              <table width="100%" style="margin-top: 25px; border-collapse: collapse;">
+                <tr style="border-bottom: 1px solid #eee;">
+                  <td style="padding: 10px 0; color: #999;">Event Type</td>
+                  <td style="padding: 10px 0; text-align: right; font-weight: bold;">${events}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #eee;">
+                  <td style="padding: 10px 0; color: #999;">Date</td>
+                  <td style="padding: 10px 0; text-align: right; font-weight: bold;">${new Date(ReservedDate).toDateString()}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #eee;">
+                  <td style="padding: 10px 0; color: #999;">Time</td>
+                  <td style="padding: 10px 0; text-align: right; font-weight: bold;">${eventStartTime} - ${eventEndTime}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 10px 0; color: #999;">Contact via</td>
+                  <td style="padding: 10px 0; text-align: right; font-weight: bold; color: #d9534f;">${Talk}</td>
+                </tr>
+              </table>
+            </div>
+
+            <div style="background-color: #fafafa; padding: 20px; text-align: center; font-size: 12px; color: #aaa;">
+              <p style="margin: 0;">Thank you for choosing Century Cinema Hall.</p>
+            </div>
+          </div>
+        </div>
+      `,
+    });
+
+    // ✅ Response
     res.status(201).json({
       success: true,
-      message: "Reservation created and email sent successfully.",
+      message: "Reservation created successfully. Emails sent.",
       data: newReserve,
     });
+
   } catch (err) {
     console.error("Error creating reservation:", err);
     res.status(500).json({

@@ -22,6 +22,9 @@ import { SignIn } from '@clerk/clerk-react'
 import AddUpcoming from './pages/admin/AddUpcoming.jsx'
 import ListUpcoming from './pages/admin/ListUpcoming.jsx'
 import UpcomingDetail from './pages/UpcomingDetail.jsx'
+import ReservationForm from './components/ReservationForm.jsx'
+import AdminReservations from './pages/admin/AdminReservations.jsx'
+import AdminAddManualMovie from './pages/admin/AdminAddManualMovie.jsx'
 
 
 
@@ -43,6 +46,7 @@ const App = () => {
        <Route path='/movie/:id' element={<MovieDetails />} />
 
        <Route path='/Movies/:id/:date' element={<SeatLayout />}/>
+       <Route path='/reserve' element={<ReservationForm/>} />
 
         <Route path='/Movies/:id/:date/:Snacks' element={<OrderSnacks />}/>
         <Route path='/my-bookings' element={<MyBookings />}/>
@@ -64,6 +68,8 @@ const App = () => {
        <Route path="ManageSnacks" element={<ManageSnacks />} />
        <Route path="AddUpcoming" element={<AddUpcoming />} />
        <Route path='List-Upcoming'element={<ListUpcoming/>} />
+       <Route path='List-Reservation' element={<AdminReservations/>}/>
+       <Route path='Add-Movie' element={<AdminAddManualMovie/>}/>
 
 
       </Route>

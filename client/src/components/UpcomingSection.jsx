@@ -82,7 +82,7 @@ const UpcomingSection = () => {
       <div className="flex items-center justify-between pt-20 pb-10">
         <p className="text-gray-300 font-medium text-lg">
           <span className="inline-block text-3xl animate-bounce">⏳</span>
-          <span className="text-gray-200 ml-2">Upcoming Movies</span>
+          <span className="text-gray-200 ml-2">COOMING SOON</span>
         </p>
       </div>
 

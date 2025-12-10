@@ -1,11 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
-import { Film, Users, Plus, X } from "lucide-react";
+import { Users, Plus, X } from "lucide-react";
 import Title from "./Title";
 
 const AdminAddManualMovie = () => {
   const backdropRef = useRef(null);
-  const trailerRef = useRef(null);
   const castFileRefs = useRef({});
 
   const [loading, setLoading] = useState(false);
@@ -23,19 +22,16 @@ const AdminAddManualMovie = () => {
 
   const [backdropPath, setBackdropPath] = useState(null);
   const [backdropPreview, setBackdropPreview] = useState(null);
-
-  const [trailer, setTrailer] = useState(null);
-  const [trailerPreview, setTrailerPreview] = useState(null);
+  const [trailerUrl, setTrailerUrl] = useState("");
 
   const [casts, setCasts] = useState([{ name: "", file: null, previewUrl: null }]);
 
   useEffect(() => {
     return () => {
       if (backdropPreview) URL.revokeObjectURL(backdropPreview);
-      if (trailerPreview) URL.revokeObjectURL(trailerPreview);
       casts.forEach((c) => c.previewUrl && URL.revokeObjectURL(c.previewUrl));
     };
-  }, [backdropPreview, trailerPreview, casts]);
+  }, [backdropPreview, casts]);
 
   const parseGenres = () => {
     const arr = genresText.split(",").map((g) => g.trim()).filter(Boolean);
@@ -46,12 +42,6 @@ const AdminAddManualMovie = () => {
     const file = e.target.files?.[0] || null;
     setBackdropPath(file);
     setBackdropPreview(file ? URL.createObjectURL(file) : null);
-  };
-
-  const handleTrailerChange = (e) => {
-    const file = e.target.files?.[0] || null;
-    setTrailer(file);
-    setTrailerPreview(file ? URL.createObjectURL(file) : null);
   };
 
   const addCast = () =>
@@ -73,11 +63,7 @@ const AdminAddManualMovie = () => {
     setCasts((s) =>
       s.map((c, i) =>
         i === idx
-          ? {
-              ...c,
-              file,
-              previewUrl: file ? URL.createObjectURL(file) : null,
-            }
+          ? { ...c, file, previewUrl: file ? URL.createObjectURL(file) : null }
           : c
       )
     );
@@ -103,6 +89,10 @@ const AdminAddManualMovie = () => {
       return setMessage("Poster is required.");
     }
 
+    if (trailerUrl && !trailerUrl.includes("youtube.com") && !trailerUrl.includes("youtu.be")) {
+      return setMessage("Please enter a valid YouTube URL for the trailer.");
+    }
+
     const formData = new FormData();
     formData.append("title", title);
     formData.append("overview", overview);
@@ -113,7 +103,7 @@ const AdminAddManualMovie = () => {
     formData.append("genres", JSON.stringify(parsedGenres));
     formData.append("genres_text", parsedGenres.join(", "));
     formData.append("backdrop_path", backdropPath);
-    if (trailer) formData.append("trailer", trailer);
+    if (trailerUrl) formData.append("trailer", trailerUrl);
 
     const validCasts = casts.filter((c) => c.name.trim() !== "");
     formData.append(
@@ -127,9 +117,11 @@ const AdminAddManualMovie = () => {
 
     try {
       setLoading(true);
-      const res = await axios.post("http://localhost:3000/api/show/manual/movie/add", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const res = await axios.post(
+        "http://localhost:3000/api/show/manual/movie/add",
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
 
       setMessage(res.data?.message || "Movie added successfully.");
 
@@ -144,11 +136,9 @@ const AdminAddManualMovie = () => {
       setVoteAverage("");
       setBackdropPath(null);
       setBackdropPreview(null);
-      setTrailer(null);
-      setTrailerPreview(null);
+      setTrailerUrl("");
       setCasts([{ name: "", file: null, previewUrl: null }]);
       if (backdropRef.current) backdropRef.current.value = "";
-      if (trailerRef.current) trailerRef.current.value = "";
       Object.values(castFileRefs.current).forEach((r) => {
         if (r?.current) r.current.value = "";
       });
@@ -160,13 +150,14 @@ const AdminAddManualMovie = () => {
     }
   };
 
-
   return (
-     <div>
+    <div>
       <Title text1="Add" text2="Movie" />
 
       <div className="p-6 max-w-5xl mx-auto text-white">
-        <p className="text-sm text-gray-400">Create a manual movie entry with poster, trailer and cast.</p>
+        <p className="text-sm text-gray-400">
+          Create a manual movie entry with poster, trailer, and cast.
+        </p>
 
         <div className="space-y-6 bg-gray-900/60 border border-gray-700 p-6 rounded-2xl shadow-lg backdrop-blur-sm">
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -178,14 +169,13 @@ const AdminAddManualMovie = () => {
                 onChange={(e) => setTitle(e.target.value)}
                 className="p-3 rounded-lg bg-gray-800 border border-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
-           <input
-  type="date"
-  value={releaseDate}
-  onChange={(e) => setReleaseDate(e.target.value)}
-  max={new Date().toISOString().split("T")[0]} // ✅ today and past allowed, future disabled
-  className="p-3 rounded-lg bg-gray-800 border border-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-/>
-
+              <input
+                type="date"
+                value={releaseDate}
+                onChange={(e) => setReleaseDate(e.target.value)}
+                max={new Date().toISOString().split("T")[0]}
+                className="p-3 rounded-lg bg-gray-800 border border-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              />
               <input
                 placeholder="🌐 Original language"
                 value={originalLanguage}
@@ -250,20 +240,36 @@ const AdminAddManualMovie = () => {
                   className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary file:text-white hover:file:bg-primary-dull hover:file:text-black cursor-pointer"
                 />
                 {backdropPreview && (
-                  <img src={backdropPreview} alt="poster preview" className="mt-3 w-56 h-32 object-cover rounded-lg border border-gray-700" />
+                  <img
+                    src={backdropPreview}
+                    alt="poster preview"
+                    className="mt-3 w-56 h-32 object-cover rounded-lg border border-gray-700"
+                  />
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2 text-gray-300">Trailer (optional)</label>
+                <label className="block text-sm font-medium mb-2 text-gray-300">Trailer</label>
                 <input
-                  ref={trailerRef}
-                  type="file"
-                  accept="video/*"
-                  onChange={handleTrailerChange}
-                  className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary-dull file:text-black hover:file:bg-primary hover:file:text-white cursor-pointer"
+                  type="text"
+                  placeholder="YouTube Trailer URL (optional)"
+                  value={trailerUrl}
+                  onChange={(e) => setTrailerUrl(e.target.value)}
+                  className="p-3 rounded-lg bg-gray-800 border border-gray-700 w-full focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
-                {trailerPreview && <video src={trailerPreview} controls className="mt-3 w-full max-w-md rounded-lg border border-gray-700" />}
+                {trailerUrl && (
+                  <div className="mt-3 w-full max-w-md rounded-lg border border-gray-700 overflow-hidden">
+                    <iframe
+                      width="100%"
+                      height="200"
+                      src={trailerUrl.replace("watch?v=", "embed/")}
+                      title="Trailer"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    ></iframe>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -274,14 +280,21 @@ const AdminAddManualMovie = () => {
                   <Users className="w-5 h-5 text-amber-300" />
                   <h3 className="text-lg font-semibold text-gray-200">🎭 Cast</h3>
                 </div>
-                <button type="button" onClick={addCast} className="px-3 py-1 bg-green-600 hover:bg-green-700 rounded-lg text-sm inline-flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={addCast}
+                  className="px-3 py-1 bg-green-600 hover:bg-green-700 rounded-lg text-sm inline-flex items-center gap-2"
+                >
                   <Plus className="w-4 h-4" /> Add Cast
                 </button>
               </div>
 
               <div className="space-y-3">
                 {casts.map((cast, idx) => (
-                  <div key={idx} className="flex flex-wrap gap-3 items-center mb-0 bg-gray-800 p-3 rounded-lg border border-gray-700">
+                  <div
+                    key={idx}
+                    className="flex flex-wrap gap-3 items-center mb-0 bg-gray-800 p-3 rounded-lg border border-gray-700"
+                  >
                     <input
                       value={cast.name}
                       onChange={(e) => onCastNameChange(idx, e.target.value)}
@@ -295,8 +308,18 @@ const AdminAddManualMovie = () => {
                       ref={(el) => (castFileRefs.current[idx] = { current: el })}
                       className="text-sm text-gray-300 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-primary file:text-white hover:file:bg-primary-dull hover:file:text-black cursor-pointer"
                     />
-                    {cast.previewUrl && <img src={cast.previewUrl} alt="cast" className="w-12 h-12 object-cover rounded-full border border-gray-600" />}
-                    <button type="button" onClick={() => removeCast(idx)} className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded-lg text-sm inline-flex items-center gap-1">
+                    {cast.previewUrl && (
+                      <img
+                        src={cast.previewUrl}
+                        alt="cast"
+                        className="w-12 h-12 object-cover rounded-full border border-gray-600"
+                      />
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => removeCast(idx)}
+                      className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded-lg text-sm inline-flex items-center gap-1"
+                    >
                       <X className="w-4 h-4" /> Remove
                     </button>
                   </div>

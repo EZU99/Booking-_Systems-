@@ -12,11 +12,10 @@ const manualMovieSchema = new mongoose.Schema(
       url: { type: String, required: true },
     },
 
-    // Optional trailer
-    trailer: {
-      public_id: { type: String, required: true },
-      url: { type: String, required: true },
-    },
+   trailer: {
+     type: String,  
+     default: null
+  },
 
     release_date: { type: String, required: true },
     original_language: { type: String, default: "en" },

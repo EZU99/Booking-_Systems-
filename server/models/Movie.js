@@ -39,6 +39,10 @@ const movieSchema = new mongoose.Schema(
         runtime: {
             type: Number, required: true
         },
+        trailer: {
+            type: String,  
+            default: null
+        }
     }, {timeseries: true}
 )
 

@@ -12,8 +12,27 @@ const MovieCard = ({ movie }) => {
   const posterSrc =
     (typeof movie.poster_path === "string" && movie.poster_path) ||
     (movie.poster_path?.url) ||
-    (movie.poster_path?.secure_url) ||
+    (movie.backdrop_path?.url) || // for manual movies (stored in backdrop_path)
     '/images/default-poster.jpg';
+
+let genreDisplay = "N/A";
+
+if (Array.isArray(movie.genres)) {
+  // TMDB array style
+  genreDisplay = movie.genres
+    .slice(0, 2)
+    .map((g) => g.name || g)
+    .join(" | ");
+} else if (typeof movie.genres === "string") {
+  // Manual comma-separated string style
+  genreDisplay = movie.genres
+    .split(",")
+    .map((g) => g.trim())
+    .filter(Boolean)
+    .slice(0, 2)
+    .join(" | ");
+}
+
 
   return (
     <div className="group flex flex-col justify-between bg-gray-900 rounded-2xl overflow-hidden shadow-md hover:shadow-yellow-500/20 hover:-translate-y-1 transition-transform duration-300 w-64">
@@ -28,8 +47,6 @@ const MovieCard = ({ movie }) => {
           alt={movie.title || 'Movie Poster'}
           className="w-full h-full object-cover object-center rounded-t-2xl transition-transform duration-500 group-hover:scale-105 opacity-90 group-hover:opacity-100"
         />
-
-        {/* Soft yellow ring glow */}
         <div className="absolute inset-0 ring-1 ring-yellow-500/30 group-hover:ring-yellow-400/60 rounded-t-2xl transition duration-300"></div>
       </div>
 
@@ -37,9 +54,7 @@ const MovieCard = ({ movie }) => {
       <div className="p-4 flex flex-col flex-grow">
         <p className="font-semibold text-lg text-white truncate">{movie.title}</p>
         <p className="text-sm text-gray-400 mt-1">
-          {new Date(movie.release_date).getFullYear()} •{' '}
-          {movie.genres?.slice(0, 2).map((genre) => genre.name).join(' | ')} •{' '}
-          {TimeForamt(movie.runtime)}
+          {new Date(movie.release_date).getFullYear()} • {genreDisplay} • {TimeForamt(movie.runtime)}
         </p>
 
         {/* Bottom section */}

@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import axios from "axios"
+import axios from "axios";
 import Movie from "../models/Movie.js";
 import Show from "../models/Show.js";
 import ManualMovie from "../models/ManualMovie.js";
@@ -25,7 +25,6 @@ export const getNowPlayingMovies = async (req, res)=>{
 }
 
 
-
 export const addShow = async (req, res) => {
   try {
     const { movieId, showsInput, price, type } = req.body;
@@ -34,26 +33,31 @@ export const addShow = async (req, res) => {
       return res.status(400).json({ success: false, message: "Missing required fields" });
     }
 
-    // Always treat movieId as a string internally
     const movieIdStr = String(movieId).trim();
 
-    // Try to find in Movies collection first (Movies._id may be string for TMDB ids)
+    // try find in Movie collection
     let movie = await Movie.findById(movieIdStr);
 
-    // Only attempt ManualMovie lookup if movieId is a valid MongoDB ObjectId
+    // try ManualMovie if movieId is an ObjectId and not found in Movie
     const isObjectId = mongoose.Types.ObjectId.isValid(movieIdStr);
     if (!movie && isObjectId) {
       const manual = await ManualMovie.findById(movieIdStr);
       if (manual) {
-        // Map manual movie structure into the Movie schema shape
+        // map manual movie to Movie shape and include trailer if present
         const movieFromManual = {
-          _id: manual._id.toString(), // store as string to stay consistent with Movies._id type
+          _id: manual._id.toString(),
           title: manual.title || "",
           overview: manual.overview || "",
           poster_path: manual.backdrop_path?.url || "",
           backdrop_path: manual.backdrop_path?.url || "",
-          genres: (manual.genres || []).map(g => (typeof g === "string" ? { name: g } : g)),
-          casts: (manual.casts || []).map(c => ({
+          // manual.genres may be string "Action, Fantasy" or array earlier — normalize to array of {name}
+          genres:
+            typeof manual.genres === "string"
+              ? manual.genres.split(",").map((g) => ({ name: g.trim() })).filter((g) => g.name)
+              : Array.isArray(manual.genres)
+              ? manual.genres.map((g) => (typeof g === "string" ? { name: g } : g))
+              : [],
+          casts: (manual.casts || []).map((c) => ({
             name: c.name || "",
             profile_path: c.castsImage?.url || c.profile_path || "",
             character: c.character || "",
@@ -63,30 +67,40 @@ export const addShow = async (req, res) => {
           language: manual.original_language || manual.language || "en",
           tagline: manual.tagline || "",
           vote_average: manual.vote_average || 0,
+          // manual.trailer expected shape: { public_id, url } (from your addMovies uploader)
+          trailer: manual.trailer || null,
         };
 
         movie = await Movie.create(movieFromManual);
       }
     }
 
-    // If still not found, fallback to TMDB fetch (handles numeric TMDB ids)
+    // fallback to TMDB fetch if still not found
     if (!movie) {
-      // TMDB fetch - wrap in try to provide clearer errors
       let movieApiData;
       let movieCreditsData;
+      let videosData;
       try {
-        const [detailsRes, creditsRes] = await Promise.all([
+        const [detailsRes, creditsRes, videosRes] = await Promise.all([
           axios.get(`https://api.themoviedb.org/3/movie/${movieIdStr}`, {
             headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` },
+            timeout: 10000,
           }),
           axios.get(`https://api.themoviedb.org/3/movie/${movieIdStr}/credits`, {
             headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` },
+            timeout: 10000,
+          }),
+          axios.get(`https://api.themoviedb.org/3/movie/${movieIdStr}/videos`, {
+            headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` },
+            timeout: 10000,
           }),
         ]);
+
         movieApiData = detailsRes.data;
         movieCreditsData = creditsRes.data;
+        videosData = videosRes.data;
       } catch (tmdbErr) {
-        console.error("TMDB fetch error:", tmdbErr.response?.data || tmdbErr.message);
+        console.error("TMDB fetch error:", tmdbErr.response?.data || tmdbErr.message || tmdbErr);
         return res.status(502).json({
           success: false,
           message: "Failed to fetch movie from TMDB",
@@ -94,8 +108,16 @@ export const addShow = async (req, res) => {
         });
       }
 
+      const videos = Array.isArray(videosData?.results) ? videosData.results : [];
+      const trailerObj =
+        videos.find((v) => v.type === "Trailer" && v.site === "YouTube" && v.official) ||
+        videos.find((v) => v.type === "Trailer" && v.site === "YouTube") ||
+        videos.find((v) => v.site === "YouTube");
+
+      const trailerUrl = trailerObj ? `https://www.youtube.com/watch?v=${trailerObj.key}` : null;
+
       const movieDetails = {
-        _id: movieIdStr, // store TMDB id as string
+        _id: movieIdStr,
         title: movieApiData.title || "",
         overview: movieApiData.overview || "",
         poster_path: movieApiData.poster_path || "",
@@ -107,6 +129,7 @@ export const addShow = async (req, res) => {
         language: movieApiData.original_language || "en",
         tagline: movieApiData.tagline || "",
         vote_average: movieApiData.vote_average || 0,
+        trailer: trailerUrl,
       };
 
       movie = await Movie.create(movieDetails);
@@ -123,7 +146,6 @@ export const addShow = async (req, res) => {
         const showDateTime = new Date(`${date}T${time}`);
         if (isNaN(showDateTime.getTime())) return;
 
-        // Validate price object fields
         const regular = Number(price?.regular ?? NaN);
         const vip = Number(price?.vip ?? NaN);
         if (Number.isNaN(regular) || Number.isNaN(vip)) return;
@@ -151,10 +173,6 @@ export const addShow = async (req, res) => {
     return res.status(500).json({ success: false, message: error.message });
   }
 };
-
-
-
-
 
 
 // api to get all shows from the database
@@ -200,4 +218,9 @@ export const getShow = async (req, res) =>{
         res.json({success: false, message: error.message})
 }
 }
+
+
+
+
+
 

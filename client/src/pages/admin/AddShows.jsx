@@ -182,7 +182,7 @@ const AddShows = () => {
           onClick={() => setSource("nowplaying")}
           className={`px-4 py-2 rounded ${
             source === "nowplaying"
-              ? "bg-primary text-white"
+              ? "bg-primary text-primary-dull"
               : "bg-transparent border border-gray-700 text-gray-300"
           }`}
         >
@@ -192,7 +192,7 @@ const AddShows = () => {
           onClick={() => setSource("manual")}
           className={`px-4 py-2 rounded ${
             source === "manual"
-              ? "bg-primary text-white"
+              ? "bg-primary text-primary-dull"
               : "bg-transparent border border-gray-700 text-gray-300"
           }`}
         >
@@ -261,7 +261,7 @@ const AddShows = () => {
         <select
           value={movieType}
           onChange={(e) => setMovieType(e.target.value)}
-          className="border border-gray-600 rounded-lg px-6 py-3 text-sm bg-transparent text-white"
+          className="border border-gray-600 rounded-lg px-6 py-3 text-sm bg-primary text-primary-dull"
         >
           {typeOptions.map((type) => (
             <option key={type} value={type}>

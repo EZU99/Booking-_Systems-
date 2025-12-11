@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import TimeForamt from "../lib/TimeForamt";
-import { Bell, Clock } from "lucide-react";
+import {  Clock } from "lucide-react";
 
 const UpcomingMovieCard = ({ upcoming }) => {
   const navigate = useNavigate();
@@ -24,7 +24,7 @@ const UpcomingMovieCard = ({ upcoming }) => {
     <div className="group flex flex-col justify-between bg-gray-900 rounded-2xl overflow-hidden shadow-md hover:shadow-yellow-500/20 hover:-translate-y-1 transition-transform duration-300 w-84 border-2 border-amber-500/15">
       
       {/* Poster Section */}
-      <div className="relative w-full h-80 overflow-hidden cursor-pointer">
+      <div className="relative w-full h-100 overflow-hidden cursor-pointer">
         <img
           onClick={() => {
             navigate(`/upcoming/${upcoming._id}`); // ✅ correct route
@@ -32,21 +32,13 @@ const UpcomingMovieCard = ({ upcoming }) => {
           }}
           src={posterSrc}
           alt={upcoming.title || "Movie Poster"}
-          className="w-full h-full object-cover object-center rounded-t-2xl transition-transform duration-500 group-hover:scale-105 opacity-90 group-hover:opacity-100"
+          className="w-full h-full object-cover object-center rounded-t-3xl transition-transform duration-500 group-hover:scale-105 opacity-90 group-hover:opacity-100"
+  
           loading="lazy"
           onError={(e) => (e.currentTarget.src = "/images/default-poster.jpg")}
         />
 
-        {/* Reminder Bell */}
-        <button
-          className="absolute top-3 right-3 bg-black/60 p-2 rounded-full hover:bg-black/80 z-20"
-          onClick={(e) => {
-            e.stopPropagation();
-            alert(`Reminder set for ${upcoming.title || "this movie"}`);
-          }}
-        >
-          <Bell className="w-4 h-4 text-white" />
-        </button>
+
 
         {/* Yellow border hover glow */}
         <div className="absolute inset-0 ring-1 ring-yellow-500/30 group-hover:ring-yellow-400/60 rounded-t-2xl transition duration-300"></div>

@@ -7,7 +7,6 @@ export default function AddUpcoming() {
   const { axios, getToken } = useAppContext();
 
   const backdropRef = useRef(null);
-  const trailerRef = useRef(null);
   const castFileRefs = useRef({});
 
   const [loading, setLoading] = useState(false);
@@ -24,18 +23,17 @@ export default function AddUpcoming() {
   const [backdropFile, setBackdropFile] = useState(null);
   const [backdropPreview, setBackdropPreview] = useState(null);
 
-  const [trailerFile, setTrailerFile] = useState(null);
-  const [trailerPreview, setTrailerPreview] = useState(null);
+  // ✅ Changed: trailer is now a link (not file)
+  const [trailerLink, setTrailerLink] = useState("");
 
   const [casts, setCasts] = useState([{ name: "", file: null, previewUrl: null }]);
 
   useEffect(() => {
     return () => {
       if (backdropPreview) URL.revokeObjectURL(backdropPreview);
-      if (trailerPreview) URL.revokeObjectURL(trailerPreview);
       casts.forEach((c) => c.previewUrl && URL.revokeObjectURL(c.previewUrl));
     };
-  }, [backdropPreview, trailerPreview, casts]);
+  }, [backdropPreview, casts]);
 
   const handleGenreParse = () => {
     const arr = genreInput.split(",").map((g) => g.trim()).filter(Boolean);
@@ -47,13 +45,6 @@ export default function AddUpcoming() {
     setBackdropFile(file);
     if (backdropPreview) URL.revokeObjectURL(backdropPreview);
     setBackdropPreview(file ? URL.createObjectURL(file) : null);
-  };
-
-  const onTrailerChange = (e) => {
-    const file = e.target.files?.[0] || null;
-    setTrailerFile(file);
-    if (trailerPreview) URL.revokeObjectURL(trailerPreview);
-    setTrailerPreview(file ? URL.createObjectURL(file) : null);
   };
 
   const addCastRow = () => setCasts((s) => [...s, { name: "", file: null, previewUrl: null }]);
@@ -87,6 +78,7 @@ export default function AddUpcoming() {
 
     if (!backdropFile) return toast.error("Please upload a backdrop image.");
     if (!finalGenres.length) return toast.error("Please add at least one genre.");
+    if (!trailerLink) return toast.error("Please provide a YouTube trailer link.");
 
     const castsMeta = casts.map((c) => ({ name: c.name || "" }));
 
@@ -100,7 +92,7 @@ export default function AddUpcoming() {
     formData.append("genres", JSON.stringify(finalGenres));
     formData.append("genres_text", finalGenres.join(", "));
     formData.append("backdrop_path", backdropFile);
-    if (trailerFile) formData.append("trailer", trailerFile);
+    formData.append("trailer", trailerLink); // ✅ now YouTube link, not file
     formData.append("casts", JSON.stringify(castsMeta));
     casts.forEach((c, idx) => {
       if (c.file) formData.append(`castsImage_${idx}`, c.file);
@@ -117,24 +109,22 @@ export default function AddUpcoming() {
       if (data?.success) {
         toast.success("Upcoming movie added!");
         if (backdropPreview) URL.revokeObjectURL(backdropPreview);
-        if (trailerPreview) URL.revokeObjectURL(trailerPreview);
         casts.forEach((c) => c.previewUrl && URL.revokeObjectURL(c.previewUrl));
 
         // Reset all fields
         setTitle(""); setDescription(""); setReleaseDate(""); setComeDate("");
         setLanguage(""); setRuntime(""); setGenreInput(""); setGenresArray([]);
         setBackdropFile(null); setBackdropPreview(null);
-        setTrailerFile(null); setTrailerPreview(null);
+        setTrailerLink(""); // ✅ reset trailer link
         setCasts([{ name: "", file: null, previewUrl: null }]);
         if (backdropRef.current) backdropRef.current.value = "";
-        if (trailerRef.current) trailerRef.current.value = "";
         Object.values(castFileRefs.current).forEach((ref) => ref?.current && (ref.current.value = ""));
       } else {
         toast.error(data.message || "Failed to add upcoming movie");
       }
     } catch (err) {
       console.error("addUpcoming error:", err.response?.data || err.message || err);
-      const serverMsg = err.response?.data?.message || err.response?.data?.genres_text || err.message;
+      const serverMsg = err.response?.data?.message || err.message;
       toast.error(serverMsg || "Server error while adding upcoming movie");
     } finally {
       setLoading(false);
@@ -191,9 +181,15 @@ export default function AddUpcoming() {
             {backdropPreview && <img src={backdropPreview} alt="backdrop preview" className="mt-3 w-56 h-32 object-cover rounded-lg border border-gray-700" />}
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1 text-gray-300">Trailer (optional)</label>
-            <input ref={trailerRef} type="file" accept="video/*" onChange={onTrailerChange} className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary-dull file:text-black hover:file:bg-primary hover:file:text-white cursor-pointer" />
-            {trailerPreview && <video src={trailerPreview} controls className="mt-3 w-full max-w-md rounded-lg border border-gray-700" />}
+            <label className="block text-sm font-medium mb-1 text-gray-300">🎞 Trailer (YouTube Link) *</label>
+            {/* ✅ Changed: input for YouTube URL instead of file */}
+            <input
+              type="url"
+              placeholder="https://www.youtube.com/watch?v=example"
+              value={trailerLink}
+              onChange={(e) => setTrailerLink(e.target.value)}
+              className="p-3 rounded-lg bg-gray-800 border border-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none w-full text-gray-200"
+            />
           </div>
         </div>
 

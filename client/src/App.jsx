@@ -25,6 +25,7 @@ import UpcomingDetail from './pages/UpcomingDetail.jsx'
 import ReservationForm from './components/ReservationForm.jsx'
 import AdminReservations from './pages/admin/AdminReservations.jsx'
 import AdminAddManualMovie from './pages/admin/AdminAddManualMovie.jsx'
+import PrivacyPolicy from './components/PrivacyPolicy.jsx'
 
 
 
@@ -53,7 +54,7 @@ const App = () => {
        <Route path='/upcoming/:id' element={<UpcomingDetail/>}/>
         <Route path='/favorite' element={<Favorite/>}/>
         <Route path='/packages' element={<Packages />}/>
-       
+       <Route path='/privacy-policy' element={<PrivacyPolicy />}/>
 
       <Route path='/admin/*' element={ user ? <Layout/> : (
         <div className='min-h-screen flex justify-center items-center'>

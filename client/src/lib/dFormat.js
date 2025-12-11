@@ -1,0 +1,8 @@
+export const dFormat = (date) => {
+    return new Date(date).toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'long',
+        day: 'numeric',
+
+    });
+}

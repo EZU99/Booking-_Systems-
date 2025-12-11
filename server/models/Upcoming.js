@@ -25,10 +25,10 @@ const upcomingSchema = new mongoose.Schema(
       },
     ],
     runtime: { type: Number, required: true },
-    trailer: {
-      public_id: { type: String, required: true },
-      url: { type: String, required: true },
-    },
+      trailer: {
+            type: String,  
+            default: null
+        }
   },
   { timestamps: true }
 );

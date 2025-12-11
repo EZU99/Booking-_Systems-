@@ -53,7 +53,7 @@ const AdminReservations = () => {
   return (
     <div className="min-h-screen p-6 xl:p-10 bg-gray-900 text-white">
       <Toaster position="top-right" reverseOrder={false} />
-      <Title text1="Add" text2="Upcoming" />
+      <Title text1="List" text2="Reservation" />
 
       <div className="overflow-x-auto bg-gray-800 rounded-xl mt-10 shadow-lg">
         <table className="min-w-full table-auto border-collapse">

@@ -9,23 +9,17 @@
     "start": "node server.js"
   },
   "keywords": [],
-  "author": "Ez Tech",
+  "author": "",
   "license": "ISC",
   "dependencies": {
-    "@chapa_et/inline.js": "^1.0.1",
     "@clerk/express": "^1.7.43",
     "axios": "^1.13.1",
     "cloudinary": "^2.8.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
-    "ejs": "^3.1.10",
     "express": "^5.1.0",
-    "express-fileupload": "^1.5.2",
     "inngest": "^3.44.5",
-    "mongoose": "^8.19.2",
-    "multer": "^2.0.2",
-    "node-cron": "^4.2.1",
-    "nodemailer": "^7.0.11"
+    "mongoose": "^8.19.2"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"

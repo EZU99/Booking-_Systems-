@@ -37,7 +37,7 @@ if (Array.isArray(movie.genres)) {
   return (
     <div className="group flex flex-col justify-between bg-gray-900 rounded-2xl overflow-hidden shadow-md hover:shadow-yellow-500/20 hover:-translate-y-1 transition-transform duration-300 w-64">
       {/* Image Section */}
-      <div className="relative w-full h-80 overflow-hidden">
+      <div className="relative w-full h-80 overfl ow-hidden">
         <img
           onClick={() => {
             navigate(`/movie/${movie._id}`);

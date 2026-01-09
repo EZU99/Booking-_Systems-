@@ -6,6 +6,7 @@ import {
   getShow,
   getShows,
 
+
 } from "../controllers/showControllers.js";
 import {
   addMovies,
@@ -24,6 +25,7 @@ showRouter.post("/add", protectAdmin, addShow);
 showRouter.get("/all", getShows);
 showRouter.get("/:movieId", getShow);
 
+
 /* ------------------ MANUAL MOVIES ------------------ */
 // Add new manual movie
 showRouter.post("/manual/movie/add",  addMovies);
@@ -39,6 +41,7 @@ showRouter.post("/manual/movie/add",  addMovies);
 showRouter.get("/manual/movies/all", getManualMovies);
 
 // Get one manual movie
+
 showRouter.get("/manual/movies/:id", getManualMovieById);
 
 

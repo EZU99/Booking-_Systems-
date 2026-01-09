@@ -36,7 +36,7 @@ const makeAbsolutePoster = (poster) => {
  * - logoSrc: either "cid:centurycinema-logo" (if attachment) or a public URL (fallback) or empty string.
  */
 const htmlBody = (title, poster, overview, showsHtml, movieId, logoSrc) => {
-  const client = process.env.CLIENT_URL || "http://localhost:5173";
+  const client = process.env.CLIENT_URL ;
   const bookLink = `${client.replace(/\/$/, "")}/movie/${movieId}`;
 
   return `<!DOCTYPE html>
